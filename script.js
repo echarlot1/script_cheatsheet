@@ -168,6 +168,95 @@ const processDirectory = async (dir) => {
 
 
 
+
+
+
+
+const fs = require('fs');
+const readline = require('readline');
+const path = require('path');
+
+const dirs = ['dir1', 'dir2', 'dir3'];
+let lineMaps = dirs.map(() => new Map());
+let fileReadCount = 0;
+
+dirs.forEach((dir, i) => {
+  fs.readdir(dir, (err, files) => {
+    if (err) {
+      console.error(`Error reading directory ${dir}: ${err}`);
+      return;
+    }
+
+    files.forEach(file => {
+      const filePath = path.join(dir, file);
+      const lineReader = readline.createInterface({
+        input: fs.createReadStream(filePath),
+        crlfDelay: Infinity,
+      });
+
+      lineReader.on('line', (line) => {
+        const lineCount = lineMaps[i].get(line) || 0;
+        lineMaps[i].set(line, lineCount + 1);
+      });
+
+      lineReader.on('close', () => {
+        fileReadCount += 1;
+
+        // When all files have been read
+        if (fileReadCount === dirs.length * files.length) {
+          const commonLines = new Set();
+          const uniqueLines = new Set();
+
+          // Find lines common to all files and unique to some
+          for (const [line, count] of lineMaps[0]) {
+            if (lineMaps[1].has(line) && lineMaps[2].has(line)) {
+              commonLines.add(line);
+            } else if (lineMaps[1].has(line) || lineMaps[2].has(line)) {
+              uniqueLines.add(line);
+            } else {
+              console.log(`Line "${line}" missing in files of directories: ${dirs.slice(1).join(', ')}`);
+            }
+          }
+
+          // Print missing lines from dir2 and dir3
+          for (const [line, count] of lineMaps[1]) {
+            if (!lineMaps[0].has(line)) {
+              console.log(`Line "${line}" missing in files of directory: ${dirs[0]}`);
+            }
+          }
+          for (const [line, count] of lineMaps[2]) {
+            if (!lineMaps[0].has(line)) {
+              console.log(`Line "${line}" missing in files of directory: ${dirs[0]}`);
+            }
+          }
+
+          // Write common lines to file
+          fs.writeFileSync('common.properties', [...commonLines].join('\n'));
+
+          // Write unique lines to separate files
+          fs.writeFileSync('unique_dir1_dir2.properties', [...uniqueLines].join('\n'));
+          fs.writeFileSync('unique_dir1_dir3.properties', [...uniqueLines].join('\n'));
+        }
+      });
+    });
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //========================
 
 const fs = require('fs');
