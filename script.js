@@ -3,6 +3,91 @@ const readline = require('readline');
 const path = require('path');
 
 
+let currentPath = process.cwd();
+let common_Prod_Properties="common.prod.properties";
+let common_Non_Prod_Properties="common.non-prod.properties";
+
+// Directories to check
+const directories = ['./dev1/apac/server/pe-importer',"./dev1/emea/server/pe-importer", './dev1/na/server/pe-importer',"./prod/apac/server/pe-importer", './prod/emea/server/pe-importer', "./prod/na/server/pe-importer", "./uat1/apac/server/pe-importer", "./uat1/emea/server/pe-importer", "./uat1/na/server/pe-importer"];
+
+// const directories =['./dev1/apac/server/pe-importer',"./dev1/emea/server/pe-importer", './dev1/na/server/pe-importer']
+
+
+
+// Object to store lines read from each directory
+let linesByDirectory = {};
+
+directories.forEach((dir) => {
+    // Get file names in directory
+    const files = fs.readdirSync(dir);
+
+    // Process each file
+    files.forEach((file) => {
+        const filePath = path.join(dir, file);
+
+        const rl = readline.createInterface({
+            input: fs.createReadStream(filePath),
+            output: process.stdout,
+            terminal: false
+        });
+
+        // Read file line by line
+        rl.on('line', (line) => {
+            // Ignore empty lines
+            if (line) {
+                if (!linesByDirectory[dir]) {
+                    linesByDirectory[dir] = {};
+                }
+                linesByDirectory[dir][line] = true;
+            }
+        });
+
+        // After reading all lines
+        rl.on('close', () => {
+            // Check if all directories have been read
+            if (Object.keys(linesByDirectory).length === directories.length) {
+                let commonLines = Object.keys(linesByDirectory[dir]);
+                // Get common lines across all directories
+                for (let directory of directories) {
+                    commonLines = commonLines.filter((line) => linesByDirectory[directory][line]);
+                }
+
+                // Write common lines to common.properties
+                fs.writeFileSync(`${currentPath}/${common_Prod_Properties}`, commonLines.join('\n'));
+                fs.writeFileSync(`${currentPath}/${common_Non_Prod_Properties}`, commonLines.join('\n'));
+                
+                // If lines are different, write them to specific file
+                for (let directory of directories) {
+                  // console.log(directory)
+                  let parts = directory.split('/');
+                  let word = parts[2]
+                  let regionWord=parts[1]
+                    let uniqueLines = Object.keys(linesByDirectory[directory])
+                        .filter((line) => !commonLines.includes(line));
+                    fs.writeFileSync(`${word}-${regionWord}.properties`, uniqueLines.join('\n'));
+                }
+            }
+        });
+    });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+const fs = require('fs');
+const readline = require('readline');
+const path = require('path');
+
+
 // directories to loop over
 const directories = ['./dev1/emea/server/pe-importer', './dev1/na/server/pe-importer', './prod/emea/server/pe-importer', "./prod/na/server/pe-importer", "./uat1/emea/server/pe-importer", "./uat1/na/server/pe-importer"];
 let currentPath = process.cwd();
