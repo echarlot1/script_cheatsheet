@@ -2,6 +2,72 @@ https://github.com/jonasschmedtmann/ultimate-react-course ==> react
 
 https://github.com/echarlot1/complete-javascript-course ==> javascript 
 
+const fs = require('fs');
+const path = require('path');
+
+const directories = [
+  './dir1',
+  './dir2',
+  // Add your directories here
+];
+
+const linesByDirectory = {};
+
+directories.forEach((dir) => {
+  const files = fs.readdirSync(dir).filter(file => file.endsWith('.properties') || file.endsWith('.csv'));
+
+  files.forEach((file) => {
+    const filePath = path.join(dir, file);
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const lines = content.split('\n').filter(Boolean); // Ignore empty lines
+
+    lines.forEach((line) => {
+      if (!linesByDirectory[line]) {
+        linesByDirectory[line] = [];
+      }
+
+      linesByDirectory[line].push(dir);
+    });
+  });
+});
+
+const commonLines = [];
+const uniqueLinesByDirectory = {};
+
+for (const line in linesByDirectory) {
+  if (linesByDirectory[line].length === directories.length) {
+    commonLines.push(line);
+  } else {
+    linesByDirectory[line].forEach((dir) => {
+      if (!uniqueLinesByDirectory[dir]) {
+        uniqueLinesByDirectory[dir] = [];
+      }
+
+      uniqueLinesByDirectory[dir].push(line);
+    });
+  }
+}
+
+fs.writeFileSync('common.properties', commonLines.join('\n'));
+
+for (const dir in uniqueLinesByDirectory) {
+  const fileName = dir.replace('./', '') + '.properties';
+  fs.writeFileSync(fileName, uniqueLinesByDirectory[dir].join('\n'));
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
