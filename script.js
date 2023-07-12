@@ -1,59 +1,213 @@
-https://github.com/jonasschmedtmann/ultimate-react-course ==> react
-
-https://github.com/echarlot1/complete-javascript-course ==> javascript 
-
 const fs = require('fs');
+const readline = require('readline');
 const path = require('path');
 
-const directories = [
-  './dir1',
-  './dir2',
-  // Add your directories here
-];
+const directories = ['/path/to/dir1', '/path/to/dir2', '/path/to/dir3']; // replace with your directory paths
 
-const linesByDirectory = {};
+// A Set for the lines that are common to all files
+let commonLines = new Set();
 
-directories.forEach((dir) => {
-  const files = fs.readdirSync(dir).filter(file => file.endsWith('.properties') || file.endsWith('.csv'));
+// For each directory, we will create a set of lines
+let dirLines = [];
 
-  files.forEach((file) => {
-    const filePath = path.join(dir, file);
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const lines = content.split('\n').filter(Boolean); // Ignore empty lines
+// A promise that resolves when a file has been read
+function processFile(filepath) {
+  return new Promise((resolve, reject) => {
+    const lines = new Set();
+    const rl = readline.createInterface({
+      input: fs.createReadStream(filepath),
+      output: process.stdout,
+      terminal: false
+    });
 
-    lines.forEach((line) => {
-      if (!linesByDirectory[line]) {
-        linesByDirectory[line] = [];
+    rl.on('line', line => {
+      // Ignore comments
+      if (!line.startsWith('#')) {
+        lines.add(line);
       }
+    });
 
-      linesByDirectory[line].push(dir);
+    rl.on('close', () => {
+      resolve(lines);
+    });
+
+    rl.on('error', err => {
+      reject(err);
+    });
+  });
+}
+
+// Read all files line by line, ignore comment lines
+directories.forEach((dir, i) => {
+  dirLines[i] = new Set();
+  fs.readdir(dir, (err, files) => {
+    if (err) {
+      console.error(`Error reading directory: ${err}`);
+      return;
+    }
+    files.forEach(file => {
+      processFile(path.join(dir, file)).then(lines => {
+        lines.forEach(line => dirLines[i].add(line));
+      });
     });
   });
 });
 
-const commonLines = [];
-const uniqueLinesByDirectory = {};
+// Wait for all files to be read, then determine common and unique lines
+Promise.all(dirLines.map(lines => processFile(lines))).then(() => {
+  // Initialize commonLines with the lines from the first directory
+  commonLines = new Set(dirLines[0]);
 
-for (const line in linesByDirectory) {
-  if (linesByDirectory[line].length === directories.length) {
-    commonLines.push(line);
-  } else {
-    linesByDirectory[line].forEach((dir) => {
-      if (!uniqueLinesByDirectory[dir]) {
-        uniqueLinesByDirectory[dir] = [];
+  // For each of the other directories, remove any line from commonLines that isn't in that directory
+  for (let i = 1; i < dirLines.length; i++) {
+    commonLines.forEach(line => {
+      if (!dirLines[i].has(line)) {
+        commonLines.delete(line);
       }
-
-      uniqueLinesByDirectory[dir].push(line);
     });
+  }
+
+  // Write the common lines to common.properties
+  fs.writeFile('common.properties', Array.from(commonLines).join('\n'), err => {
+    if (err) {
+      console.error(`Error writing to file: ${err}`);
+    }
+  });
+
+  // For each directory, write the unique lines to a file named after the directory
+  dirLines.forEach((lines, i) => {
+    const uniqueLines = Array.from(lines).filter(line => !commonLines.has(line));
+    fs.writeFile(`dir${i + 1}.txt`, uniqueLines.join('\n'), err => {
+      if (err) {
+        console.error(`Error writing to file: ${err}`);
+      }
+    });
+  });
+}).catch(err => {
+  console.error(`Error processing files: ${err}`);
+});
+
+
+
+
+
+const fs = require('fs').promises;
+const readline = require('readline');
+const path = require('path');
+
+const directories = ['dir1', 'dir2', 'dir3']; // replace with your directory paths
+
+async function processFiles() {
+  const filesArr = await Promise.all(directories.map(dir => fs.readdir(dir)));
+  const commonFiles = filesArr[0].filter(file => filesArr[1].includes(file) && filesArr[2].includes(file));
+
+  for (let file of commonFiles) {
+    const linesArr = await Promise.all(directories.map(dir => 
+      new Promise((resolve, reject) => {
+        const lines = new Set();
+        const rl = readline.createInterface({
+          input: fs.createReadStream(path.join(dir, file)),
+          crlfDelay: Infinity
+        });
+        
+        rl.on('line', (line) => {
+          lines.add(line);
+        });
+        
+        rl.on('close', () => {
+          resolve(lines);
+        });
+        
+        rl.on('error', (err) => {
+          reject(err);
+        });
+      })
+    ));
+
+    const commonLines = Array.from(linesArr[0]).filter(line => linesArr[1].has(line) && linesArr[2].has(line));
+    const uniqueLines = linesArr.map((lines, index) => 
+      Array.from(lines).filter(line => !commonLines.includes(line)).map(line => ({ line, dir: directories[index] }))
+    );
+
+    await fs.appendFile('common.properties', commonLines.join('\n') + '\n');
+    for (let lines of uniqueLines) {
+      for (let { line, dir } of lines) {
+        await fs.appendFile(`${dir}.properties`, line + '\n');
+      }
+    }
   }
 }
 
-fs.writeFileSync('common.properties', commonLines.join('\n'));
+processFiles().catch(console.error);
 
-for (const dir in uniqueLinesByDirectory) {
-  const fileName = dir.replace('./', '') + '.properties';
-  fs.writeFileSync(fileName, uniqueLinesByDirectory[dir].join('\n'));
-}
+
+
+
+
+
+
+
+
+
+
+
+
+// https://github.com/jonasschmedtmann/ultimate-react-course ==> react
+
+// https://github.com/echarlot1/complete-javascript-course ==> javascript 
+
+// const fs = require('fs');
+// const path = require('path');
+
+// const directories = [
+//   './dir1',
+//   './dir2',
+//   // Add your directories here
+// ];
+
+// const linesByDirectory = {};
+
+// directories.forEach((dir) => {
+//   const files = fs.readdirSync(dir).filter(file => file.endsWith('.properties') || file.endsWith('.csv'));
+
+//   files.forEach((file) => {
+//     const filePath = path.join(dir, file);
+//     const content = fs.readFileSync(filePath, 'utf-8');
+//     const lines = content.split('\n').filter(Boolean); // Ignore empty lines
+
+//     lines.forEach((line) => {
+//       if (!linesByDirectory[line]) {
+//         linesByDirectory[line] = [];
+//       }
+
+//       linesByDirectory[line].push(dir);
+//     });
+//   });
+// });
+
+// const commonLines = [];
+// const uniqueLinesByDirectory = {};
+
+// for (const line in linesByDirectory) {
+//   if (linesByDirectory[line].length === directories.length) {
+//     commonLines.push(line);
+//   } else {
+//     linesByDirectory[line].forEach((dir) => {
+//       if (!uniqueLinesByDirectory[dir]) {
+//         uniqueLinesByDirectory[dir] = [];
+//       }
+
+//       uniqueLinesByDirectory[dir].push(line);
+//     });
+//   }
+// }
+
+// fs.writeFileSync('common.properties', commonLines.join('\n'));
+
+// for (const dir in uniqueLinesByDirectory) {
+//   const fileName = dir.replace('./', '') + '.properties';
+//   fs.writeFileSync(fileName, uniqueLinesByDirectory[dir].join('\n'));
+// }
 
 
 
