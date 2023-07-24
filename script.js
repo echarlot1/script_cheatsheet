@@ -1,3 +1,185 @@
+To pull data from a Swagger API using a sealed ID in React and TypeScript, and display it in the `ConnectGrid` component, you can follow these steps:
+
+1. Install the necessary dependencies:
+   - `axios`: A popular HTTP client library for making API requests.
+
+   Run the following command to install the dependency:
+   ```
+   npm install axios
+   ```
+
+2. Create a new component called `DataFetcher.tsx` to fetch the data based on the sealed ID:
+
+   ```tsx
+   import React, { useEffect, useState } from 'react';
+   import axios from 'axios';
+
+   interface Data {
+     name: string;
+     appManager: string;
+     version: string;
+     weaveFunction: string;
+   }
+
+   interface DataFetcherProps {
+     sealedId: string;
+     onDataFetched: (data: Data) => void;
+   }
+
+   const DataFetcher: React.FC<DataFetcherProps> = ({ sealedId, onDataFetched }) => {
+     useEffect(() => {
+       const fetchData = async () => {
+         try {
+           const response = await axios.get<Data>(`/api/details/${sealedId}`);
+           onDataFetched(response.data);
+         } catch (error) {
+           console.error(error);
+         }
+       };
+
+       fetchData();
+     }, [sealedId, onDataFetched]);
+
+     return null;
+   };
+
+   export default DataFetcher;
+   ```
+
+   In the above example, we define the `Data` interface to represent the shape of the fetched data. We also define the `DataFetcherProps` interface to specify the props for the `DataFetcher` component. The `DataFetcher` component uses the `useEffect` hook to fetch the data from the API based on the sealed ID passed as a prop. We make an HTTP GET request using `axios` to the `/api/details/:id` endpoint, where `:id` is the sealed ID passed from the prop. Once the data is fetched, we call the `onDataFetched` callback function passed as a prop and pass the fetched data to it.
+
+3. Update the API endpoint:
+   Replace `/api/details/:id` with the actual Swagger API endpoint that provides the details based on the sealed ID. Make sure to replace it with the correct URL and endpoint path.
+
+4. Update the `ConnectGrid.tsx` component to use the fetched data:
+
+   ```tsx
+   import React, { useState } from 'react';
+   import DataFetcher from './DataFetcher';
+
+   const ConnectGrid: React.FC = () => {
+     const [data, setData] = useState<Data | null>(null);
+
+     const onDataFetched = (fetchedData: Data) => {
+       setData(fetchedData);
+     };
+
+     return (
+       <div>
+         <DataFetcher sealedId="your-sealed-id" onDataFetched={onDataFetched} />
+         {data && (
+           <Grid
+             // ... other props
+             rowData={[data]}
+           />
+         )}
+       </div>
+     );
+   };
+
+   export default ConnectGrid;
+   ```
+
+   In the above example, we import the `DataFetcher` component and use it in the `ConnectGrid` component. We pass the sealed ID as a prop to the `DataFetcher` component and provide the `onDataFetched` callback function to receive the fetched data. Once the data is fetched and received in the `onDataFetched` callback, we store it in the `data` state variable. Finally, we render the `Grid` component and pass the fetched data as the `rowData` prop.
+
+5. Update the `Grid` component:
+   Make sure to update the `Grid` component with the correct configuration and column definitions to display the fetched data properly.
+
+That's it! Now, when the `ConnectGrid` component is rendered, it will fetch the data based on the sealed ID using the `DataFetcher` component. Once the data is fetched, it will be stored in the `data` state variable and passed to the `Grid` component to display it.
+
+
+
+
+
+
+
+
+
+const fs = require('fs');
+const path = require('path');
+
+function processDirectory(directoryPath) {
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      console.error(`Error reading directory: ${directoryPath}`, err);
+      return;
+    }
+
+    files.forEach((file) => {
+      const filePath = path.join(directoryPath, file);
+
+      fs.stat(filePath, (err, stats) => {
+        if (err) {
+          console.error(`Error getting file stats: ${filePath}`, err);
+          return;
+        }
+
+        if (stats.isDirectory()) {
+          processDirectory(filePath);
+        } else {
+          processFile(filePath);
+        }
+      });
+    });
+  });
+}
+
+function processFile(filePath) {
+  const fileExtension = path.extname(filePath).toLowerCase();
+
+  if (fileExtension === '.txt') {
+    fs.readFile(filePath, 'utf-8', (err, fileContent) => {
+      if (err) {
+        console.error(`Error reading file: ${filePath}`, err);
+        return;
+      }
+
+      const lines = fileContent.trim().split('\n');
+      const duplicateLines = findDuplicateLines(lines);
+
+      if (duplicateLines.length > 0) {
+        duplicateLines.forEach((line) => {
+          fs.appendFileSync('duplicate_lines.txt', line + '\n', 'utf-8');
+        });
+
+        console.log(`Duplicate lines copied to file: duplicate_lines.txt`);
+      }
+    });
+  }
+}
+
+function findDuplicateLines(lines) {
+  const seen = {};
+  const duplicates = [];
+
+  for (const line of lines) {
+    if (!seen[line]) {
+      seen[line] = true;
+    } else if (!duplicates.includes(line)) {
+      duplicates.push(line);
+    }
+  }
+
+  return duplicates;
+}
+
+// Provide the root directory path here
+const rootDirectory = '/path/to/root/directory';
+const duplicateLinesFile = 'duplicate_lines.txt';
+
+// Delete the duplicate lines file if it already exists
+if (fs.existsSync(duplicateLinesFile)) {
+  fs.unlinkSync(duplicateLinesFile);
+}
+
+processDirectory(rootDirectory);    DONE
+
+
+
+
+
+
+
 const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
@@ -492,82 +674,5 @@ dirs.forEach((dir, i) => {
 
 //========================
 
-const fs = require('fs');
-const path = require('path');
 
-function processDirectory(directoryPath) {
-  fs.readdir(directoryPath, (err, files) => {
-    if (err) {
-      console.error(`Error reading directory: ${directoryPath}`, err);
-      return;
-    }
-
-    files.forEach((file) => {
-      const filePath = path.join(directoryPath, file);
-
-      fs.stat(filePath, (err, stats) => {
-        if (err) {
-          console.error(`Error getting file stats: ${filePath}`, err);
-          return;
-        }
-
-        if (stats.isDirectory()) {
-          processDirectory(filePath);
-        } else {
-          processFile(filePath);
-        }
-      });
-    });
-  });
-}
-
-function processFile(filePath) {
-  const fileExtension = path.extname(filePath).toLowerCase();
-
-  if (fileExtension === '.txt') {
-    fs.readFile(filePath, 'utf-8', (err, fileContent) => {
-      if (err) {
-        console.error(`Error reading file: ${filePath}`, err);
-        return;
-      }
-
-      const lines = fileContent.trim().split('\n');
-      const duplicateLines = findDuplicateLines(lines);
-
-      if (duplicateLines.length > 0) {
-        duplicateLines.forEach((line) => {
-          fs.appendFileSync('duplicate_lines.txt', line + '\n', 'utf-8');
-        });
-
-        console.log(`Duplicate lines copied to file: duplicate_lines.txt`);
-      }
-    });
-  }
-}
-
-function findDuplicateLines(lines) {
-  const seen = {};
-  const duplicates = [];
-
-  for (const line of lines) {
-    if (!seen[line]) {
-      seen[line] = true;
-    } else if (!duplicates.includes(line)) {
-      duplicates.push(line);
-    }
-  }
-
-  return duplicates;
-}
-
-// Provide the root directory path here
-const rootDirectory = '/path/to/root/directory';
-const duplicateLinesFile = 'duplicate_lines.txt';
-
-// Delete the duplicate lines file if it already exists
-if (fs.existsSync(duplicateLinesFile)) {
-  fs.unlinkSync(duplicateLinesFile);
-}
-
-processDirectory(rootDirectory);
 
