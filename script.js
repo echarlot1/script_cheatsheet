@@ -1,3 +1,171 @@
+=============================
+   import { EmptyState } from "./../EmptyState";
+const sampleData = require(".sampledata");
+
+const getOverlayComponent = (
+  noRowOverlayText,
+  overlayType = "default",
+  additionalProps = {}
+) => {
+  const commonProps = {
+    show: true,
+  };
+
+  const propMaps = {
+    search: {
+      iconSize: "md",
+      text: `No result found for \`${additionalProps.quickSearchText}\``,
+      subText: `Try modifying your filter result in ${additionalProps.columnName}`,
+    },
+    filters: {
+      iconSize: "md",
+      text: `No result found for \`${additionalProps.quickSearchText}\``,
+      subText: `Try modifying your filter result in ${additionalProps.columnName}`,
+    },
+    default: {
+      iconSize: "md",
+      text: `No result found for \`${additionalProps.quickSearchText}\``,
+      subText: `Try modifying your filter result in ${additionalProps.columnName}`,
+    },
+  };
+
+  return { ...commonProps, ...propMaps[overlayType] };
+};
+
+class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.onGridReady = this.onGridReady.bind(this);
+    this.onModelUpdated = this.onModelUpdated.bind(this);
+    this.customRowsOverlayComponent = this.customRowsOverlayComponent.bind(this);
+
+    this.state = {
+      columnDefs: [
+        {
+          field: "id",
+          width: 100,
+          filter: false,
+          suppressMenu: true,
+          suppressFilterToolPanel: true,
+          suppressFilterColumnPanel: true,
+          hide: true,
+        },
+        {
+          field: "first_name",
+          headerName: "First Name",
+        },
+        {
+          field: "last_name",
+          headerName: "Last Name",
+        },
+        {
+          field: "email",
+          headerName: "Email",
+        },
+        {
+          field: "balance",
+          headerName: "Balance",
+        },
+        {
+          field: "country",
+          headerName: "Country",
+        },
+      ],
+      rowData: sampleData.slice(0, 5),
+      defaultColumnDef: {
+        enableRowGroup: true,
+      },
+      sideBar: {
+        toolPanels: [
+          {
+            id: "id",
+            toolPanelParams: {
+              suppressRowGroup: false,
+            },
+          },
+        ],
+      },
+      nonRowsOverlayType: "default",
+      columnName: "", // Initialize with an empty string
+    };
+  }
+
+  customRowsOverlayComponent({ noRowOverlayText }) {
+    return (
+      <EmptyState
+        {...getOverlayComponent(noRowOverlayText, this.state.nonRowOverlayType, {
+          quickSearchText: this.api.getModel(filterManager.quickFilter),
+          columnName: this.state.columnName, // Pass the column name
+        })}
+      />
+    );
+  }
+
+  onModelUpdated({ api }) {
+    console.log(api);
+    if (api.getDisplayedRowCount() === 0) {
+      const quickSearchUsed = api.isQuickFilterPresent();
+      const filterSet = (api.filterManager.alColumnFilters || {}).size;
+
+      if (quickSearchUsed) {
+        this.setState({ nonRowsOverlayType: "search" });
+      } else if (filterSet) {
+        this.setState({ nonRowsOverlayType: "filters" });
+      } else {
+        this.setState({ nonRowsOverlayType: "default" });
+      }
+
+      const column = api.getFocusedCell().column; // Get the focused column
+      if (column) {
+        this.setState({ columnName: column.getColDef().headerName }); // Set the column name
+      }
+
+      api.showNoRowsOverlay();
+    } else {
+      api.hideOverlay();
+    }
+  }
+
+  render() {
+    const { columnDefs, rowData, defaultColumnDef, sideBar } = this.state;
+    return (
+      <>
+        <ConnectGrid
+          style={{ height: 300 }}
+          columnDefs={columnDefs}
+          rowData={rowData}
+          autoFillColumn={true}
+          defaultColDef={defaultColumnDef}
+          sideBar={sideBar}
+          noRowsOverlayComponent={this.customRowsOverlayComponent} // Fix the prop name
+          onGridReady={this.onGridReady}
+          onModelUpdated={this.onModelUpdated}
+        />
+      </>
+    );
+  }
+
+  onGridReady({ api }) {
+    this.api = api;
+  }
+}
+
+<App />;
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================
+
 To pull data from a Swagger API using a sealed ID in React and TypeScript, and display it in the `ConnectGrid` component, you can follow these steps:
 
 1. Install the necessary dependencies:
