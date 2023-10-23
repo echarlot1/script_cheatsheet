@@ -1,3 +1,17 @@
+Define a function to generate the overlay component message based on the column name and search/filter text.
+Update the onModelUpdated function to determine the column name and pass it to the overlay component function.
+Update the customRowOverlayComponent function to display the message based on the column name.
+Here's the modified code:
+
+
+
+
+   In this code, we have added a columnName state variable to store the current column name. 
+      We also updated the onModelUpdated function to get the focused column and set the columnName state accordingly. 
+      Then, we pass this columnName to the overlay component to display the message with the specific column name.
+      Additionally, 
+      I fixed a few typos in your code, such as nonRowOverlayText and noRowsOverlayComponent.
+
 =============================
    import { EmptyState } from "./../EmptyState";
 const sampleData = require(".sampledata");
